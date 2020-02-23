@@ -1,0 +1,98 @@
+---
+version: "3.1"
+services:
+  portainer:
+    container_name: portainer
+    image: portainer/portainer
+    ports:
+      - "8000:8000"
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: always
+  autoheal:
+    container_name: autoheal
+    build: ./autoheal
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  plex:
+    image: linuxserver/plex
+    container_name: plex
+    network_mode: host
+    ports:
+      - "32400:32400"
+      - "32400:32400/udp"
+      - "32469:32469"
+      - "32469:32469/udp"
+      - "5353:5353/udp"
+      - "1900:1900/udp"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+      - UMASK_SET=022
+    volumes:
+      - /home/pi/lib:/config
+      - /home/pi/media:/movies
+      - /home/pi/torrents:/torrents
+    restart: unless-stopped 
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+    environment:
+      TZ: "America/Chicago"
+      WEBPASSWORD: /run/secrets/web_pass
+    volumes:
+      - './etc-pihole/:/etc/pihole/'
+      - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    secrets:
+      - web_pass
+  openvpn-client:
+    build: ./openvpn-client
+    cap_add:
+      - NET_ADMIN
+    container_name: openvpn_running
+    labels:
+      - "autoheal=true"
+    ports:
+      - "9091:9091"
+    environment:
+      - LOCAL_NETWORKS=192.168.9.0/24
+    volumes:
+      - pia_port:/var/run/pia
+      - /home/pi/torrent_config:/config
+    devices:
+      - /dev/net/tun
+    restart: unless-stopped 
+  transmission-client:
+    container_name: transmission_run
+    build: ./transmission-client
+    network_mode: "service:openvpn-client"
+    depends_on:
+      - openvpn-client
+    volumes:
+      - pia_port:/var/run/pia
+      - /home/pi/torrents:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /home/pi/torrent_config:/config
+    restart: unless-stopped 
+
+secrets:
+  web_pass:
+    file: web_pwd.txt
+
+volumes:
+  pia_port:
+  portainer_data:
