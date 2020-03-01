@@ -64,10 +64,9 @@ services:
     cap_add:
       - NET_ADMIN
     container_name: openvpn_running
-    labels:
-      - "autoheal=true"
     ports:
       - "9091:9091"
+      - "7878:7878"
     environment:
       - LOCAL_NETWORKS=192.168.9.0/24
     volumes:
@@ -88,7 +87,22 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /home/pi/torrent_config:/config
     restart: unless-stopped 
-
+  radarr:
+    image: linuxserver/radarr
+    network_mode: "service:openvpn-client"
+    container_name: radarr
+    labels: 
+      - "autoheal=true"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="America/Chicago"
+      - UMASK_SET=022
+    volumes:
+      - /home/pi/radarr:/config
+      - /home/pi/torrents/transmission:/movies
+      - /home/pi/torrents/incomplete:/data
+    restart: unless-stopped
 secrets:
   web_pass:
     file: web_pwd.txt
@@ -96,3 +110,4 @@ secrets:
 volumes:
   pia_port:
   portainer_data:
+
