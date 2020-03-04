@@ -35,8 +35,9 @@ services:
       - UMASK_SET=022
     volumes:
       - /home/pi/lib:/config
-      - /home/pi/media:/movies
-      - /home/pi/torrents:/torrents
+      - /home/pi/media:/media
+      - /home/pi/Library/movies:/movies
+      - /home/pi/Library/tv:/tv
     restart: unless-stopped 
   pihole:
     container_name: pihole
@@ -67,6 +68,7 @@ services:
     ports:
       - "9091:9091"
       - "7878:7878"
+      - "8989:8989"
     environment:
       - LOCAL_NETWORKS=192.168.9.0/24
     volumes:
@@ -100,13 +102,28 @@ services:
       - UMASK_SET=022
     volumes:
       - /home/pi/radarr:/config
-      - /home/pi/torrents/transmission:/movies
-      - /home/pi/torrents/incomplete:/data
+      - /home/pi/Library/movies:/movies
+      - /home/pi/torrents/transmission:/data
+    restart: unless-stopped
+  sonarr:
+    image: linuxserver/sonarr
+    network_mode: "service:openvpn-client"
+    container_name: sonarr
+    labels: 
+      - "autoheal=true"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="America/Chicago"
+      - UMASK_SET=022
+    volumes:
+      - /home/pi/sonarr:/config
+      - /home/pi/Library/tv:/tv
+      - /home/pi/torrents/transmission:/downloads
     restart: unless-stopped
 secrets:
   web_pass:
     file: web_pwd.txt
-
 volumes:
   pia_port:
   portainer_data:
