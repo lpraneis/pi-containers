@@ -1,6 +1,19 @@
 ---
 version: "3.1"
 services:
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="America/Chicago"
+      - AUTO_UPDATE=true
+    volumes:
+      - /home/pi/jackett-config:/config
+      - /media/usb/transmission:/downloads
+    restart: unless-stopped
+    network_mode: "service:openvpn-client"
   portainer:
     container_name: portainer
     image: portainer/portainer
@@ -69,6 +82,7 @@ services:
       - "9091:9091"
       - "7878:7878"
       - "8989:8989"
+      - "9117:9117"
     environment:
       - LOCAL_NETWORKS=192.168.0.0/24
     volumes:
@@ -103,7 +117,7 @@ services:
     volumes:
       - /home/pi/radarr:/config
       - /media/usb/transmission/movies:/movies
-      - /media/usb/transmission:/data
+      - /media/usb/:/data
     restart: unless-stopped
   sonarr:
     image: linuxserver/sonarr
@@ -119,7 +133,7 @@ services:
     volumes:
       - /home/pi/sonarr:/config
       - /media/usb/transmission/tv:/tv
-      - /media/usb/transmission:/data
+      - /media/usb/:/data
     restart: unless-stopped
 secrets:
   web_pass:
